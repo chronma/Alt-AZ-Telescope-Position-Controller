@@ -1,0 +1,319 @@
+/*
+ * Copyright (C) 2015 Texas Instruments Incorporated - http://www.ti.com/
+ *
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the
+ *    distribution.
+ *
+ *  * Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <stdint.h>
+#include <pru_cfg.h>
+#include <pru_ctrl.h>
+#include "resource_table_empty.h"
+
+/* Mapping Constant Table (CT) registers to variables */
+volatile far uint8_t CT_MCSPI0 __attribute__((cregister("MCSPI0", near), peripheral));
+
+#ifndef PRU_SRAM
+#define PRU_SRAM __far __attribute__((cregister("PRU_SHAREDMEM", near)))
+#endif
+
+#ifndef PRU_DMEM0
+#define PRU_DMEM0 far __attribute__((cregister("PRU_DMEM_0_1",  near)))
+#endif
+
+#ifndef PRU_DMEM1
+#define PRU_DMEM1 far __attribute__((cregister("PRU_DMEM_1_0",  near)))
+#endif
+
+#define BitVal(data,y)     ( (data>>y) & 1)       /** Return Data.Y value   **/
+#define SetBit(data,y)     data |= (1 << y)       /** Set Data.Y   to 1     **/
+#define ClearBit(data,y)   data &= ~(1 << y)      /** Clear Data.Y to 0     **/
+#define TogleBit(data,y)   (data ^=BitVal(y))     /** Togle Data.Y  value   **/
+#define Togle(data)        (data =~data )         /** Togle Data value      **/
+
+// ************************************************************************
+/* NOTE:  Allocating shared_freq_x to PRU Shared Memory means that other PRU cores on
+ *        the same subsystem must take care not to allocate data to that memory.
+ *        Users also cannot rely on where in shared memory these variables are placed
+ *        so accessing them from another PRU core or from the ARM is an undefined behavior.
+*/
+
+// PRU_SRAM volatile uint32_t shared_0; (reference declaration)
+//PRU_DMEM0 volatile uint32_t shared_2; (reference declaration)
+
+/* NOTE:  Here we pick where in memory to store shared_5.  The stack and
+ *        heap take up the first 0x200 words, so we must start after that.
+ *        Since we are hardcoding where things are stored we can share
+ *        this between the PRUs and the ARM.
+*/
+// Skip the first 0x200 bytes of DRAM since the Makefile allocates
+// 0x100 for the STACK and 0x100 for the HEAP.
+
+//PRU_SRAM volatile uint32_t *pru_command_bits = (uint32_t*)(0x10100); // buffer for command bits not sure how to size (malloc?)
+PRU_SRAM volatile uint8_t *test = (uint8_t*)(0x10100); //creates a buffer of X byte variables starting at address
+
+//PRU_SRAM volatile uint32_t *pru_0_axis_databuffer = (uint32_t*)(0x10200); // buffer for axis data
+//  [0]A1steps [1]A1PulseLength
+//  [2]A2steps [3]A2PulseLength
+//  [4]A3steps [5]A3PulseLength
+
+// Set up commandbit at offset 10100 (sharedmem)
+
+/* PRU0
+ * bit 0 - 0=ok to write new values for axis 1 (pru0)
+ * bit 1 - 0=ok to write new values for axis 2 (pru0)
+ * bit 2 - 0=ok to write new values for axis 3 (pru0)
+ * bit 3 - Axis 1 direction
+ * bit 4 - Axis 2 direction
+ * bit 5 - Axis 3 direction
+ * bit 6 - Axis 1 limit input
+ * bit 7 - Axis 2 limit input
+ * bit 8 - Axis 3 limit input
+ *
+ * PRU1
+ * bit 19 - 0=ok to write new values for axis 4 (pru1)
+ * bit 20 - 0=ok to write new values for axis 5 (pru1)
+ * bit 21 - 0=ok to write new values for axis 6 (pru1)
+ * bit 16 - Axis 4 direction
+ * bit 17 - Axis 5 direction
+ * bit 18 - Axis 6 direction
+ * bit 19 - Axis 4 limit input
+ * bit 20 - Axis 5 limit input
+ * bit 21 - Axis 6 limit input
+ */
+
+// *************************************************************************
+
+/* PRCM Registers */ //not sure how these are used yet
+#define CM_PER_BASE ((volatile uint8_t *)(0x44E00000))
+#define SPI0_CLKCTRL  (0x4C)
+#define ON (0x2)
+
+#define MCSPI0_MODULCTRL (*((volatile uint32_t*)(&CT_MCSPI0 + 0x128)))
+
+/* This is a char so that I can force access to R31.b0 for the host interrupt */
+
+/* PRU-to-ARM interrupt */
+#define PRU_ARM_INTERRUPT (19+16)
+
+int main(void)
+{
+    uint32_t result;
+    volatile uint8_t *ptr_cm;
+
+    ptr_cm = CM_PER_BASE;
+
+    /*****************************************************************/
+    /* Access PRU peripherals using Constant Table & PRU header file */
+    /*****************************************************************/
+
+    /* Clear SYSCFG[STANDBY_INIT] to enable OCP master port */
+    CT_CFG.SYSCFG_bit.STANDBY_INIT = 0;
+
+    /* Read IEPCLK[OCP_EN] for IEP clock source */
+    result = CT_CFG.IEPCLK_bit.OCP_EN;
+
+
+    /*****************************************************************/
+    /* Access SoC peripherals using Constant Table                   */
+    /*****************************************************************/
+
+    /* Access PRCM (without CT) to initialize McSPI0 clock */
+    ptr_cm[SPI0_CLKCTRL] = ON;
+
+    /* Read McSPI0_MODULCTRL (offset 0x128)*/
+    result = MCSPI0_MODULCTRL;
+
+    /* Toggle MCSPI0_MODULCTRL[MS] (offset 0x128, bit 2) */
+    MCSPI0_MODULCTRL ^= 0x4;
+
+    /* Reset MCSPI0_MODULCTRL[MS] to original value */
+    MCSPI0_MODULCTRL = result;
+
+    /*****************************************************************/
+    /* Access PRU Shared RAM using Constant Table                    */
+    /*****************************************************************/
+
+    /* C28 defaults to 0x00000000, we need to set bits 23:8 to 0x0100 in order to have it point to 0x00010000    */
+    PRU0_CTRL.CTPPR0_bit.C28_BLK_POINTER = 0x0100;
+    // set up
+    volatile register uint32_t __R30;
+    volatile register uint32_t __R31;
+
+    // testing section *****************************************************
+    test[0]=0xaa;
+    test[1]=0xbb;
+    test[2]=0xcc;
+    test[3]=0xdd;
+    test[4]=0xee;
+    test[5]=0xff;
+    test[6]=0x99;
+    test[7]=0x88;
+
+    int interupt_count;
+    int bitholder;
+
+   while (1){
+
+      //attempt to reset pru using pru_ctrl =0 resets
+           if (test[7]==0xff){
+               PRU0_CTRL.CTRL_bit.SOFT_RST_N=1;
+               test[12]=0x2d;
+
+           }
+           if (test[7]==0xee){
+               test[12]=0xab;
+               PRU0_CTRL.CTRL_bit.SOFT_RST_N=0;
+               test[12]=0xab;
+
+                      }
+
+     // First Test get bits from test[0] and put them in test[1] wait, reset, and repeat
+     for (interupt_count = 0; interupt_count < 8; interupt_count++) {
+
+         bitholder=BitVal(test[0], interupt_count);
+         if (bitholder==1) {
+         SetBit(test[1], interupt_count);
+         }
+         test[2]=interupt_count;
+     }
+     __delay_cycles(2500000);
+
+      for (interupt_count = 0; interupt_count < 8; interupt_count++) {
+
+              ClearBit(test[1], interupt_count);
+         }
+    __delay_cycles(2500000);
+
+}
+
+
+
+   // End testing section ***********************************************************************
+
+    /*
+    uint8_t bit =0;
+    uint32_t A1STEP = P9_31;
+    uint32_t A1DIR = P9_29;
+    uint32_t A2STEP = P9_30;
+    uint32_t A2DIR = P9_28;
+    uint32_t A3STEP = P9_27;
+    uint32_t A3DIR = P9_25;
+    uint32_t A1LIMIT = P8_15;
+    uint32_t A2LIMIT = P9_16;
+    uint32_t A3LIMIT = P9_41;
+
+    pru_command_bits[0]=0; //make sure nothing starts moving at start
+    uint32_t A1Steps=0;
+    uint32_t A2Steps=0;
+    uint32_t A3Steps=0;
+    uint32_t A1pulselength=0;
+    uint32_t A2pulselength=0;
+    uint32_t A3pulselength=0;
+
+    int interupt_count;  // only check the command bits and inputs ever so many cycles
+    uint32_t A1stepcounter=0;
+    uint32_t A1pulselengthcounter=0;
+    uint32_t A2stepcounter=0;
+    uint32_t A2pulselengthcounter=0;
+    uint32_t A3stepcounter=0;
+    uint32_t A3pulselengthcounter=0;
+
+
+   while (1) {
+       testholder=pru_command_bits[0];
+       bit = testholder>>0&1;
+       SetBit(test[0], 0);
+       if (bit==1) {  //check bit 0 if its ok to set axis 1 data
+                    SetBit(test[0], 1);
+                    A1Steps=pru_0_axis_1_pulses[0];
+                    A1pulselength=pru_0_axis_1_pulselength[0];
+                    pru_0_axis_1_pulses[0]=0;
+                    pru_0_axis_1_pulselength[0]=0;
+                    //ClearBit(pru_command_bits[0],0);
+
+                    if (BitVal(pru_command_bits[0],3)==1) {// set direction right away
+                        __R30 = (1UL << A1DIR);
+                        } else {
+                        __R30 |= 1UL << A1DIR;
+                        }
+        }
+        if (BitVal(pru_command_bits[0],1)==1) {  //check bit 1 if its ok to set axis 2 data
+
+                   A2Steps=pru_0_axis_2_pulses[0];
+                   A2pulselength=pru_0_axis_2_pulselength[0];
+                   pru_0_axis_2_pulses[0]=0;
+                   pru_0_axis_2_pulselength[0]=0;
+                   ClearBit(pru_command_bits[0],1);
+                   if (BitVal(pru_command_bits[0],4)==1) { // set direction right away
+                        __R30 = (1UL << A2DIR);
+                        } else {
+                        __R30 |= 1UL << A2DIR;
+                        }
+        }
+        if (BitVal(pru_command_bits[0],2)==1) {  //check bit 2 if its ok to set axis 3 data
+
+                   A3Steps=pru_0_axis_3_pulses[0];
+                   A3pulselength=pru_0_axis_3_pulselength[0];
+                   pru_0_axis_3_pulses[0]=0;
+                   pru_0_axis_3_pulselength[0]=0;
+                   ClearBit(pru_command_bits[0],2);
+                   if (BitVal(pru_command_bits[0],5)==1) { // set direction right away
+                        __R30 = (1UL << A3DIR);
+                        } else {
+                        __R30 |= 1UL << A3DIR;
+                        }
+        }
+
+        // only check the command bits and inputs ever so many cycles
+        for (interupt_count = 0; interupt_count < 1000; interupt_count++) {
+
+        if (A1Steps !=0) {
+            if (A1stepcounter==0){
+                __R30 ^= 1UL << A1STEP; // set bit to start
+            }
+            A1pulselengthcounter++;
+            if (A1pulselengthcounter==A1pulselength){ // toggle the pulse ever time the pulse length counter hits set point
+                __R30 ^= 1UL << A1STEP;
+                A1pulselengthcounter=0;
+                A1stepcounter++;
+                }
+            if (A1stepcounter==A1Steps){
+                A1stepcounter=0;
+                A1Steps=0;
+                __R30 &= ~(1UL << A1STEP);
+            }}
+
+        }
+
+
+    }*/
+}
+
+
