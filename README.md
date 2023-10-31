@@ -19,6 +19,9 @@ inquirer 3.1.3 (sudo pip3 install inquirer)
 pynmeagps 1.0.29 (sudo pip3 install pynmeagps)  
 Skyfield (sudo pip3 install skyfield)  
 Flask 3.0.0 (sudo pip3 install Flask)  
+
+Indigo server
+#sudo indigo_server
   
 Usage.  
 Home the scope and target something easy to find. set in auto mode and fine tune the position with the key pad or web page. once locked on a target it should switchto other 
