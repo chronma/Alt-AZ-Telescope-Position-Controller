@@ -1,0 +1,687 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Flask-SocketIO Test</title>
+    <script type="text/javascript" src="//code.jquery.com/jquery-1.4.2.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+            // Use a "/test" namespace.
+            // An application can open a connection on multiple namespaces, and
+            // Socket.IO will multiplex all those connections on a single
+            // physical channel. If you don't care about multiple channels, you
+            // can set the namespace to an empty string.
+            namespace = '/test';
+
+            // Connect to the Socket.IO server.
+            // The connection URL has the following format:
+            //     http[s]://<domain>:<port>[/<namespace>]
+            var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+
+            // Event handler for new connections.
+            // The callback function is invoked when a connection with the
+            // server is established.
+            socket.on('connect', function() {
+                socket.emit('my_event', {data: 'connected'});
+            });
+
+            // Event handler for server sent data.
+            // The callback function is invoked whenever the server emits data
+            // to the client. The data is then displayed in the "Received"
+            // section of the page.
+            socket.on('my_response', function(msg) {
+                $('#log').text('Reply#' + msg.count + ': ' + msg.data);
+            
+            });
+            
+            socket.on('recieve_server_data_event', function(sendstr0,sendstr1) {
+                    document.getElementById("chat").innerHTML="";
+                    var text = sendstr0;
+                    var text1= sendstr1;
+                    document.getElementById("chat").innerHTML += "Server: " + text + "\n\n";   
+                    document.getElementById("chat").innerHTML += "Server: " + text1 + "\n\n";  
+               
+                });
+            
+            socket.on('recieve_current_data_event', function(data0,data1,data2,data3,data4,data5,data6,data7,data8) {
+                    document.getElementById("displaybox").innerHTML="";
+                    
+                    document.getElementById("displaybox").innerHTML += "0: " + data0 + "\n\n";   
+                    document.getElementById("displaybox").innerHTML += "1: " + data1 + "\n\n";  
+                    document.getElementById("displaybox").innerHTML += "2: " + data2 + "\n\n"; 
+                    document.getElementById("displaybox").innerHTML += "3: " + data3 + "\n\n"; 
+                    document.getElementById("displaybox").innerHTML += "4: " + data4 + "\n\n"; 
+                    document.getElementById("displaybox").innerHTML += "5: " + data5 + "\n\n"; 
+                    document.getElementById("displaybox").innerHTML += "6: " + data6 + "\n\n"; 
+                    document.getElementById("displaybox").innerHTML += "7: " + data7 + "\n\n";
+                    document.getElementById("displaybox").innerHTML += "8: " + data8 + "\n\n";
+                });
+                
+            // Interval function that tests message latency by sending a "ping"
+            // message. The server then responds with a "pong" message and the
+            // round trip time is measured.
+            var ping_pong_times = [];
+            var start_time;
+            window.setInterval(function() {
+                start_time = (new Date).getTime();
+                socket.emit('my_ping');
+            }, 1000);
+
+            // Handler for the "pong" message. When the pong is received, the
+            // time from the ping is stored, and the average of the last 30
+            // samples is average and displayed.
+            socket.on('my_pong', function() {
+                var latency = (new Date).getTime() - start_time;
+                ping_pong_times.push(latency);
+                ping_pong_times = ping_pong_times.slice(-30); // keep last 30 samples
+                var sum = 0;
+                for (var i = 0; i < ping_pong_times.length; i++)
+                    sum += ping_pong_times[i];
+                $('#ping-pong').text(Math.round(10 * sum / ping_pong_times.length) / 10);
+            });
+
+            // Handlers for the different forms in the page.
+            // These accept data from the user and send it to the server in a
+            // variety of ways
+            $('form#emit').submit(function(event) {
+                socket.emit('my_event', {data: $('#emit_data').val()});
+                return false;
+            });
+           
+            
+            $('form#panright').submit(function(event) {
+                socket.emit('panright_event', {data: $('#panright_data').val()});
+                return false;
+            });
+            
+            $('form#turning_rate').submit(function(event) {
+                socket.emit('turning_rate_event', {data: $('#turning_rate_data').val()});
+                return false;
+            });
+            
+            $('form#panleft').submit(function(event) {
+                socket.emit('panleft_event', {data: $('#panleft_data').val()});
+                return false;
+            });
+            
+            $('form#focusin').submit(function(event) {
+                socket.emit('focusin_event', {data: $('#focusin_data').val()});
+                return false;
+            });
+            $('form#focusout').submit(function(event) {
+                socket.emit('focusout_event', {data: $('#focusout_data').val()});
+                return false;
+            });
+            
+             $('form#altup').submit(function(event) {
+                socket.emit('altup_event', {data: $('#altup_data').val()});
+                return false;
+            });
+             $('form#altdown').submit(function(event) {
+                socket.emit('altdown_event', {data: $('#altdown_data').val()});
+                return false;
+            });
+            
+           $('form#stop').submit(function(event) {
+                socket.emit('stop_request');
+                return false;
+            });
+        
+           $('form#calibratecompass').submit(function(event) {
+                socket.emit('calibratecompass_request');
+                return false;
+            });
+            $('form#AZhome').submit(function(event) {
+                socket.emit('AZhome_request');
+                return false;
+            });
+            $('form#ALThome').submit(function(event) {
+                socket.emit('ALThome_request');
+                return false;
+            });
+            $('form#Auto').submit(function(event) {
+                socket.emit('Auto_request');
+                return false;
+            });
+            $('form#Manual').submit(function(event) {
+                socket.emit('Manual_request');
+                return false;
+            });
+            $('form#setposition').submit(function(event) {
+                socket.emit('setposition_request');
+                return false;
+            });
+            
+            $('form#Focuserhome').submit(function(event) {
+                socket.emit('Focuserhome_request');
+                return false;
+            });
+            
+            $('form#target').submit(function(event) {
+                socket.emit('target_event', {data0: $('#target_data_RA_deg_data').val(),
+                                            data1: $('#target_data_RA_min_data').val(),
+                                            data2: $('#target_data_RA_sec_data').val(),
+                                            data3: $('#target_data_DEC_deg_data').val(),
+                                            data4: $('#target_data_DEC_min_data').val(),
+                                            data5: $('#target_data_DEC_sec_data').val() });
+                
+                
+                return false;
+            });
+           
+            $('form#mapcoordinates').submit(function(event) {
+                socket.emit('latlong_event', {data0: $('#lattitude_data').val(),
+                                            data1: $('#longitude_data').val(),
+                                            data2: $('#elevation_data').val()});
+                
+                
+                return false;
+            });
+            
+            
+            $('form#targetlist').submit(function(event) {
+                socket.emit('target_planet_event', {data: $('#planet_select').val()});
+                return false;
+            });
+          
+            $('form#startargetlist').submit(function(event) {
+                socket.emit('target_star_event', {data: $('#star_select').val()});
+                return false;
+            });
+        });
+    </script>
+</head>
+<body>
+    <h1>TELESCOPE TRACKING </h1>
+     
+    <img STYLE="position:relative; TOP:00px; LEFT:150px; WIDTH:1050px; HEIGHT:700px" 
+    src="{{ url_for('static', filename='TELESCOPEPICTURE.jpg') }}">
+    <p>ping <b><span id="ping-pong"></b></p>
+    
+    <a href="#" onclick="javascript:window.location.port=7624" target="_blank"> indigo server</a>   
+    
+    <form id="panleft" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 0px;
+    top          : 250px;
+    background   : none;
+    cursor       : pointer">
+    <input type="number" 
+    style="
+    width        : 60px;
+    position     : relative;
+    left         : 5px;
+    top          : 0px;"
+    name="panleft_data" min="0.000" max="360.0" id="panleft_data" value="4.00"> 
+    "  Pan Left Step (Degrees)"
+    
+    <input type="submit" value="Pan Left"
+     style="
+    position     : relative;
+    left         : 10px;
+    top          : 0px;">
+    </form>
+    
+    <form id="panright" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 0px;
+    top          : 275px;
+    background   : none;
+    cursor       : pointer">
+    <input type="number" 
+    style="
+    width        : 60px;
+    position     : relative;
+    left         : 5px;
+    top          : 0px;"
+    name="panright_data" min="0.000" max="360.0" id="panright_data" value="4.00"> 
+     "Pan Right Step (Degrees)"
+    
+    <input type="submit" value="Pan Right"
+     style="
+    position     : relative;
+    left         : 10px;
+    top          : 0px;">
+    </form>
+    
+    <form id="turning_rate" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 0px;
+    top          : 400px;
+    background   : none;
+    cursor       : pointer">
+    <input type="number" 
+    style="
+    width        : 60px;
+    position     : relative;
+    left         : 5px;
+    top          : 0px;"
+    name="turning_rate_data" min="0.000" max="6.000" id="turning_rate_data" value="4.000"> 
+    Turning Rate (Degrees/s)"
+    
+    <input type="submit" value="submit turning rate"
+     style="
+    position     : relative;
+    left         : 10px;
+    top          : 0px;">
+    </form>
+    
+    <form id="focusin" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 0px;
+    top          : 150px;
+    background   : none;
+    cursor       : pointer">
+    <input type="number" 
+    style="
+    width        : 60px;
+    position     : relative;
+    left         : 5px;
+    top          : 0px;"
+    name="focusin_data" min="0.000" max="360.0" id="focusin_data" value="30.00"> 
+    "Focuser in (degrees)"
+    
+    <input type="submit" value="Focuser In"
+     style="
+    position     : relative;
+    left         : 10px;
+    top          : 0px;">
+    </form>
+    
+    <form id="focusout" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 0px;
+    top          : 175px;
+    background   : none;
+    cursor       : pointer">
+    <input type="number" 
+    style="
+    width        : 60px;
+    position     : relative;
+    left         : 5px;
+    top          : 0px;"
+    name="focusout_data" min="0.000" max="360.0" id="focusout_data" value="30.00"> 
+    "Focuser out (Degrees)"
+    
+    <input type="submit" value="Focuser Out"
+     style="
+    position     : relative;
+    left         : 10px;
+    top          : 0px;">
+    </form>
+    
+     <form id="altup" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 000px;
+    top          : 200px;
+    background   : none;
+    cursor       : pointer">
+    <input type="number" 
+    style="
+    width        : 60px;
+    position     : relative;
+    left         : 5px;
+    top          : 0px;"
+    name="altup_data" min="0.000" max="20.0" id="altup_data" value="5.000"> 
+    "ALT up step (Degrees)"
+    
+    <input type="submit" value="ALT Up"
+     style="
+    position     : relative;
+    left         : 10px;
+    top          : 0px;">
+    </form>
+    
+     <form id="altdown" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 0px;
+    top          : 225px;
+    background   : none;
+    cursor       : pointer">
+    <input type="number" 
+    style="
+    width        : 60px;
+    position     : relative;
+    left         : 5px;
+    top          : 0px;"
+    name="altdown_data" min="0.000" max="20.0" id="altdown_data" value="5.000"> 
+    "ALT down step (Degrees)"
+    
+    <input type="submit" value="ALT Down"
+     style="
+    position     : relative;
+    left         : 10px;
+    top          : 0px;">
+    </form>
+   
+   <form id="stop" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 20px;
+    top          : 700px;
+    background   : none;
+    cursor       : pointer">
+   
+    <input type="submit" value="Stop">
+    
+    </form>
+    
+    
+    <form id="setposition" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 20px;
+    top          : 675px;
+    background   : none;
+    cursor       : pointer">
+   
+    <input type="submit" value="Set target to current position">
+    
+    </form>
+    
+    <form id="calibratecompass" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 20px;
+    top          : 650px;
+    background   : none;
+    cursor       : pointer">
+   
+    <input type="submit" value="Calibrate compass">
+    
+    </form>
+    
+    <form id="AZhome" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 20px;
+    top          : 625px;
+    background   : none;
+    cursor       : pointer">
+   
+    <input type="submit" value="Home AZ">
+    
+    </form>
+    
+    <form id="ALThome" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 20px;
+    top          : 600px;
+    background   : none;
+    cursor       : pointer">
+   
+    <input type="submit" value="Home ALT">
+    
+    </form>
+    
+    <form id="Focuserhome" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 20px;
+    top          : 575px;
+    background   : none;
+    cursor       : pointer">
+   
+    <input type="submit" value="Home Focuser">
+    
+    </form>
+    
+    <form id="Auto" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 20px;
+    top          : 550px;
+    background   : none;
+    cursor       : pointer">
+   
+    <input type="submit" value="AUTO MODE">
+    
+    </form>
+    
+    <form id="Manual" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 20px;
+    top          : 525px;
+    background   : none;
+    cursor       : pointer">
+   
+    <input type="submit" value="MANUAL MODE">
+    
+    </form>
+    
+    <form id="target" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 200px;
+    top          : 800px;
+    background   : none;
+    cursor       : pointer">
+    <input type="number" 
+    style="
+    width        : 50px;
+    position     : relative;
+    left         : 5px;
+    top          : 0px;"
+    name="target_data_RA_deg" min="0" max="24" id="target_data_RA_deg_data" value="3"> 
+    "RA(HRS)" 
+    
+    <input type="number" 
+    style="
+    width        : 50px;
+    position     : relative;
+    left         : 5px;
+    top          : 0px;"
+    name="target_data_RA_min" min="0" max="60" id="target_data_RA_min_data" value="3"> 
+    "RA (MIN)"
+    
+    <input type="number" step="0.01"
+    style="
+    width        : 50px;
+    position     : relative;
+    left         : 5px;
+    top          : 0px;"
+    name="target_data_RA_sec" min="0.000" max="60.000" id="target_data_RA_sec_data" value="12.6"> 
+    "RA (SEC)"
+    
+     <input type="number" 
+    style="
+    width        : 50px;
+    position     : relative;
+    left         : 5px;
+    top          : 0px;"
+    name="target_data_DEC_deg" min="-360" max="360" id="target_data_DEC_deg_data" value="89"> 
+    "DEC(DEG)" 
+    
+    <input type="number" 
+    style="
+    width        : 50px;
+    position     : relative;
+    left         : 5px;
+    top          : 0px;"
+    name="target_data_DEC_min" min="0" max="60" id="target_data_DEC_min_data" value="21"> 
+    "DEC(MIN)"
+    
+    <input type="number" step="0.01"
+    style="
+    width        : 50px;
+    position     : relative;
+    left         : 5px;
+    top          : 0px;"
+    name="target_data_DEC_sec" min="0.00" max="60.00" id="target_data_DEC_sec_data" value="38.7"> 
+    "DEC(SEC)"
+    
+    
+    <input type="submit" value="Submit Target Data"
+     style="
+    position     : relative;
+    left         : 10px;
+    top          : 0px;">
+    </form>
+    
+    <form id="mapcoordinates" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 200px;
+    top          : 825px;
+    background   : none;
+    cursor       : pointer">
+    <input type="number" step="0.001"
+    style="
+    width        : 70px;
+    position     : relative;
+    left         : 5px;
+    top          : 0px;"
+    name="Enter Latitude " min="-90" max="90" id="lattitude_data" value="44.194"> 
+    " *N Latitude" 
+    
+    <input type="number" step="0.001"
+    style="
+    width        : 60px;
+    position     : relative;
+    left         : 5px;
+    top          : 0px;"
+    name="Enter Longitude " min="-90" max="90" id="longitude_data" value="88.447"> 
+    " *W Longitude"
+    
+   <input type="number" step="0.01"
+    style="
+    width        : 60px;
+    position     : relative;
+    left         : 5px;
+    top          : 0px;"
+    name="Enter Elevation (m) " min="-90" max="10000" id="elevation_data" value="52"> 
+    " *Elevation (m)" 
+    
+    <input type="submit" value="Submit current coorninates"
+     style="
+    position     : relative;
+    left         : 10px;
+    top          : 0px;">
+    </form>
+    
+    
+    
+    
+    <h2>Messages</h2>
+    <p><span id="log"></p>
+   
+    <div style="
+    margin: 250px; 
+    display: flex;
+    flex-direction: column;
+    position     : absolute;
+    left         : 820px;
+    top          : -200px;
+    ">
+        SERVER MESSAGES               
+        <textarea id="chat" style="width: 500px; height: 75px; font-size: 12px; font-family: monospace; margin-top: 10px;"></textarea>                 
+        <div style="display: flex; flex-direction: row;">
+            
+        </div>
+    </div>        
+    
+    <div style="
+    margin: 250px; 
+    display: block;
+    
+    position     : absolute;
+    left         : 820px;
+    top          : -75px;
+    ">
+        TELESCOPE DATA               
+        <textarea id="displaybox" style="width: 500px; height: 360px; font-size: 12px; font-family: monospace; margin-top: 10px;"></textarea>                 
+        <div style="display: block ">
+            
+        </div>
+    </div>     
+    
+    <div style="
+    margin: 250px; 
+    display: block;
+    
+    position     : absolute;
+    left         : 820px;
+    top          : 350px;
+    ">
+        SCRATCH PAD               
+        <textarea id="scratchpad" style="width: 500px; height: 150px; font-size: 14px; font-family: monospace; margin-top: 10px;"></textarea>                 
+        <div style="display: block ">
+            
+        </div>
+    </div>     
+    
+    
+    <form id="targetlist" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 700px;
+    top          : 100px;
+    background   : none;
+    cursor       : pointer">
+    
+    <label for="planet_select">Choose planet:</label>
+    
+    <select name="planet_select" id="planet_select">
+      <option value="sun">The Sun</option>
+      <option value="moon">The Moon</option>
+      <option value="MERCURY BARYCENTER">Mercury</option>
+      <option value="VENUS BARYCENTER">Venus</option>
+      <option value="MARS BARYCENTER">Mars</option>
+      <option value="SATURN BARYCENTER">Saturn</option>
+      <option value="URANUS BARYCENTER">Uranus</option>
+      <option value="NEPTUNE BARYCENTER">Neptune</option>
+    
+    </select> 
+    
+    <input type="submit" value="submit planet"
+     style="
+    position     : relative;
+    left         : 10px;
+    top          : 0px;">
+    
+     </form>
+  
+  <form id="startargetlist" method="POST" action='#'  
+    STYLE="
+    position     : absolute;
+    left         : 700px;
+    top          : 125px;
+    background   : none;
+    cursor       : pointer">
+    
+    <label for="star_select">Choose planet:</label>
+    
+    <select name="star_select" id="star_select">
+      <option value="polaris">North star</option>
+      <option value="vega">Vega In Lyra</option>
+      <option value="Andromeda_M31">Andromeda galaxy</option>
+      <option value="pleiades">Pleiades</option>
+      <option value="mizar">Mizar in Big Dipper</option>
+      <option value="m101">m101 galaxy near big dipper</option>
+      <option value="mirphak">Mirphak in Perseus</option>
+      <option value="deneb">Deneb in Cygnus</option>
+    
+    </select> 
+    
+    <input type="submit" value="submit star"
+     style="
+    position     : relative;
+    left         : 10px;
+    top          : 0px;">
+    
+     </form>
+  
+   
+   
+   
+</body>
+</html>
