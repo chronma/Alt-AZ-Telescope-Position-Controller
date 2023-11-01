@@ -1,0 +1,82 @@
+Tools
+Winscp
+SSh
+
+
+1. start with bone-debian-10.0-iot-armhf-2019-07-07-4gb.img.xz
+use balena etcher
+
+ssh debian@192.168.7.2 
+pwd is temppwd
+sudo nano uEnv.txt 
+  	##enable Generic eMMC Flasher:
+	##make sure, these tools are installed: dosfstools rsync
+>>>>	cmdline=init=/opt/scripts/tools/eMMC/init-eMMC-flasher-v3.sh
+
+2. connect to wifi
+
+sudo connmanctl
+
+#connmanctl> enable wifi
+#connmanctl> scan wifi
+#connmanctl> services
+#connmanctl> agent on
+#connmanctl> connect wifi_*_managed_psk
+#connmanctl> quit
+
+ping google.com #should connect. CTRL-C to end ping
+
+3. mount sd card to hold pandas, startfied db and cloud9 files.
+
+debian@beaglebone:/var/lib/cloud9$ sudo mkdir SDCard0
+
+sudo fdisk -l
+sudo mount /dev/mmcblk0p1 SDCard0 #use fdisk to make a partition if needed on the sd card.
+lsblk -o name,serial,uuid,partuuid,label,partlabel $(blkid --label MY_MICROSD)
+sudo nano /etc/fstab
+# UUID=d68ad13c-c456-4e2a-8608-42032ad820c6 3244345d-01 /var/lib/cloud9/SDCard0 fat12  defaults 0 0
+/dev/mmcblk0p1  /var/lib/cloud9/SDCard0      auto    auto,rw,async,user,nofail 0  0
+
+sudo chmod -R 777 ./  # make it easier to copy files to sd card over winscp
+
+4. remove unused files
+
+sudo npm -g remove node-red
+sudo npm -g remove node-red-admin
+rm -R ~/.node-red
+
+sudo rm -r -f  folder  #remove folder
+sudo df -h
+sudo du -h
+find . -xdev -type f -size +100M -print | xargs ls -lh | sort -k5,5 -h -r
+sudo du -ahx . | sort -rh | head -10
+
+
+
+ 5. update apt
+sudo apt update
+sudo apt upgrade
+sudo apt autoremove
+
+6. install blinka
+
+sudo apt-get update
+sudo apt-get install build-essential python3-dev python3-pip -y
+sudo -H pip3 install --upgrade pip
+sudo pip3 install Adafruit_BBIO
+sudo pip3 install --upgrade setuptools
+sudo pip3 install Adafruit-Blinka
+sudo pip3 install --upgrade setuptools
+sudo pip3 install adafruit-circuitpython-lsm303agr-mag
+sudo pip3 install adafruit-circuitpython-lsm303-accel
+sudo pip3 install adafruit-circuitpython-lis2mdl
+
+7. install indigo
+sudo nano /etc/apt/sources.list.d/indigo.list
+add the following line
+deb [trusted=yes] https://indigo-astronomy.github.io/indigo_ppa/ppa indigo main
+
+sudo apt install indigo
+sudo indigo_server
+http://192.168.88.31:7624/imager.html
+
