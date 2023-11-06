@@ -207,13 +207,13 @@
     top          : 250px;
     background   : none;
     cursor       : pointer">
-    <input type="number" 
+    <input type="number" step="0.01"
     style="
     width        : 60px;
     position     : relative;
     left         : 5px;
     top          : 0px;"
-    name="panleft_data" min="0.000" max="360.0" id="panleft_data" value="4.00"> 
+    name="panleft_data" min="0.000" max="360.0" id="panleft_data" value="1.00"> 
     "  Pan Left Step (Degrees)"
     
     <input type="submit" value="Pan Left"
@@ -230,13 +230,13 @@
     top          : 275px;
     background   : none;
     cursor       : pointer">
-    <input type="number" 
+    <input type="number" step="0.01"
     style="
     width        : 60px;
     position     : relative;
     left         : 5px;
     top          : 0px;"
-    name="panright_data" min="0.000" max="360.0" id="panright_data" value="4.00"> 
+    name="panright_data" min="0.000" max="360.0" id="panright_data" value="1.00"> 
      "Pan Right Step (Degrees)"
     
     <input type="submit" value="Pan Right"
@@ -253,13 +253,13 @@
     top          : 400px;
     background   : none;
     cursor       : pointer">
-    <input type="number" 
+    <input type="number" step="0.01"
     style="
     width        : 60px;
     position     : relative;
     left         : 5px;
     top          : 0px;"
-    name="turning_rate_data" min="0.000" max="6.000" id="turning_rate_data" value="4.000"> 
+    name="turning_rate_data" min="0.000" max="6.000" id="turning_rate_data" value="2.000"> 
     Turning Rate (Degrees/s)"
     
     <input type="submit" value="submit turning rate"
@@ -282,7 +282,7 @@
     position     : relative;
     left         : 5px;
     top          : 0px;"
-    name="focusin_data" min="0.000" max="360.0" id="focusin_data" value="30.00"> 
+    name="focusin_data" min="0.000" max="720.0" id="focusin_data" value="30.00"> 
     "Focuser in (degrees)"
     
     <input type="submit" value="Focuser In"
@@ -305,7 +305,7 @@
     position     : relative;
     left         : 5px;
     top          : 0px;"
-    name="focusout_data" min="0.000" max="360.0" id="focusout_data" value="30.00"> 
+    name="focusout_data" min="0.000" max="720.0" id="focusout_data" value="30.00"> 
     "Focuser out (Degrees)"
     
     <input type="submit" value="Focuser Out"
@@ -322,13 +322,13 @@
     top          : 200px;
     background   : none;
     cursor       : pointer">
-    <input type="number" 
+    <input type="number" step="0.01"
     style="
     width        : 60px;
     position     : relative;
     left         : 5px;
     top          : 0px;"
-    name="altup_data" min="0.000" max="20.0" id="altup_data" value="5.000"> 
+    name="altup_data" min="0.000" max="20.0" id="altup_data" value="1.000"> 
     "ALT up step (Degrees)"
     
     <input type="submit" value="ALT Up"
@@ -345,13 +345,13 @@
     top          : 225px;
     background   : none;
     cursor       : pointer">
-    <input type="number" 
+    <input type="number" step="0.01"
     style="
     width        : 60px;
     position     : relative;
     left         : 5px;
     top          : 0px;"
-    name="altdown_data" min="0.000" max="20.0" id="altdown_data" value="5.000"> 
+    name="altdown_data" min="0.000" max="20.0" id="altdown_data" value="1.000"> 
     "ALT down step (Degrees)"
     
     <input type="submit" value="ALT Down"
@@ -636,6 +636,7 @@
       <option value="MERCURY BARYCENTER">Mercury</option>
       <option value="VENUS BARYCENTER">Venus</option>
       <option value="MARS BARYCENTER">Mars</option>
+      <option value="JUPITER BARYCENTER">Jupiter</option>
       <option value="SATURN BARYCENTER">Saturn</option>
       <option value="URANUS BARYCENTER">Uranus</option>
       <option value="NEPTUNE BARYCENTER">Neptune</option>
